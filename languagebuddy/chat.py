@@ -1,4 +1,6 @@
 import os
+import time
+from typing import Any, Generator
 
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -8,23 +10,22 @@ load_dotenv()
 
 
 class LangBuddy:
-    def __init__(self, model="gpt-4o-mini", temperature=0.5):
+    def __init__(self, model: str = "gpt-4.1-nano", temperature: float = 0.5) -> None:
         self.model = model
         self.temperature = temperature
-        self.system_prompt = (
-            "You are a {name} and you are a {language} expert, always respond in this langauge."
-            "Just make a conversation with the user."
-        )
+        self.system_prompt = "You are a {name} and you are a {language} expert, always respond in this langauge."
         self.llm = ChatOpenAI(
             model=self.model,
             temperature=self.temperature,
             api_key=os.getenv("OPENAI_API_KEY"),
+            streaming=True,
         )
 
-    def get_response(self, prompt):
-        system_prompt = self.system_prompt.format(name="LangBuddy", language="German")
+    def get_response(self, prompt) -> Generator[Any, Any, Any]:
+        system_prompt = self.system_prompt.format(name="LangBuddy", language="polish")
         messages = [
             SystemMessage(content=system_prompt),
             HumanMessage(content=prompt),
         ]
-        return self.llm.invoke(messages).content
+        for data in self.llm.stream(messages):
+            yield data.content
